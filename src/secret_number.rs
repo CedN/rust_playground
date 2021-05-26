@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::io;
 use rand::prelude::*;
 
@@ -9,13 +10,13 @@ pub fn play() {
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).expect("Failed to read input line");
         let proposal: i32 = buffer.trim().parse().unwrap();
-        if proposal == number {
-            println!("You have guessed the number {}!", number);
-            break;
-        } else if proposal > number {
-            println!("The number {} is too high! Try again:", proposal);
-        } else {
-            println!("The number {} is too low! Try again:", proposal);
+        match proposal.cmp(&number) {
+            Ordering::Equal => {
+                println!("You have guessed the number {}!", number);
+                break;
+            },
+            Ordering::Greater => println!("The number {} is too high! Try again:", proposal),
+            Ordering::Less => println!("The number {} is too low! Try again:", proposal)
         }
     }   
 }
