@@ -4,11 +4,18 @@ use std::fs;
 use std::path::Path;
 
 pub fn word_count() {
-    let (file, content) = if let Some(path) = env::args().nth(1) {
-        match fs::read_to_string(Path::new(&path)) {
-            Ok(content) => (path, content.to_lowercase()),
+    let (file, content) = read_content_file();
+    let words = content.split_whitespace().collect();
+    let words_aggregation = aggregate_words(words);
+    display_top_5_most_common_words(&words_aggregation, &file);
+}
+
+fn read_content_file() -> (String, String) {
+    let (file, content) = if let Some(file) = env::args().nth(1) {
+        match fs::read_to_string(Path::new(&file)) {
+            Ok(content) => (file, content.to_lowercase()),
             Err(e) => {
-                eprintln!("Failed to read file {}: {:?}", path, e);
+                eprintln!("Failed to read file {}: {:?}", file, e);
                 std::process::exit(1);
             }
         }  
@@ -16,20 +23,23 @@ pub fn word_count() {
         eprintln!("You must add a file as argument!");
         std::process::exit(2);
     };
-    let words: Vec<&str> = content.split_whitespace().collect();
-    process_words(words, &file);
+    (file, content)
 }
 
-fn process_words(words: Vec<&str>, file: &str) {
-    let mut top_count = 0;
-    let mut top_word = "";
-    let mut words_aggregation: HashMap<&str, u32> = HashMap::new();
+fn aggregate_words(words: Vec<&str>) -> Vec<(String, u32)> {
+    let mut words_aggregation: HashMap<String, u32> = HashMap::new();
     for word in words {
-        *words_aggregation.entry(word).or_insert(0) += 1;
-        if words_aggregation.get(word).unwrap() > &top_count {
-            top_count = *words_aggregation.get(word).unwrap();
-            top_word = word;
-        }
+        *words_aggregation.entry(word.to_string()).or_insert(0) += 1;
     }
-    println!("the word '{}' is the most common word in '{}'. It appears {} times!", top_word, file, top_count);
+    words_aggregation.iter().map(|(w, c)| (w.clone(), c.to_owned())).collect()
+}
+
+fn display_top_5_most_common_words(words: &[(String, u32)], file: &str) {
+    let mut sorted_words = words.to_owned();
+    sorted_words.sort_by(|(_, c1), (_, c2)| c2.cmp(&c1));
+    println!("Top 5 of the most common words in '{}'", file);
+    for (word, count) in sorted_words.iter().take(5) {
+        println!("'{}' appears {} times", word, count)
+    }
+
 }
